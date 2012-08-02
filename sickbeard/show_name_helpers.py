@@ -253,7 +253,9 @@ def isGoodResult(name, show, log=True):
         realname = name
         for regex in releasetrim:
             name = re.sub(regex, "", name)
-        
+        #FIXME: Looks buggy...
+        # Jul-07 14:00:56 DEBUG    SEARCHQUEUE-BACKLOG-84676 :: REGEX - Releasename: < Warehouse.13.S02E13.Der.Geist.der.Weihnacht.GERMAN.DUBBED.720p.HDTV.x264-ZZGtv > >ghost-of-usenet.org< - - "zzgtv-warehouse13-s02e13.nfo" yEnc
+        # Jul-07 14:00:56 DEBUG    SEARCHQUEUE-BACKLOG-84676 :: REGEX - Cleaned Releasename: ghost-of-usenet.org< - - "zzgtv-warehouse13-s02e13.nfo" yEnc
         if realname != name:
             logger.log(u"REGEX - Releasename: "+realname, logger.DEBUG)
             logger.log(u"REGEX - Cleaned Releasename: "+name, logger.DEBUG)

@@ -68,6 +68,9 @@ class NZBIndexProvider(generic.NZBProvider):
         if quotes:
             term = "\""+term+"\""
 
+        # FIXME: How to get wanted quality here to improve results?
+        term += ' 720p'
+
         params = {"q": term,
                   "max": 50,
                   "hidespam": 1,

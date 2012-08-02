@@ -108,8 +108,8 @@ class Quality:
 
     @staticmethod
     def nameQuality(name):
-
-        name = os.path.basename(name)
+        # nzbindex often has "/" in names ...
+        #name = os.path.basename(name)
 
         # if we have our exact text then assume we put it there
         for x in Quality.qualityStrings:
@@ -129,7 +129,7 @@ class Quality:
             return Quality.SDDVD
         elif checkName(["720p", "hdtv", "x264"], all) or checkName(["hr.ws.pdtv.x264"], any):
             return Quality.HDTV
-        elif checkName(["720p", "web.dl"], all) or checkName(["720p", "(webhd|itunes)", "h.?264"], all):
+        elif checkName(["720p", "web.dl"], all) or checkName(["720p", "(webhd|itunes)", "h.?264"], all) or checkName(["720p", "(webhd|itunes)", "avc"], all):
             return Quality.HDWEBDL
         elif checkName(["720p", "bluray", "x264"], all) or checkName(["720p", "hddvd", "x264"], all):
             return Quality.HDBLURAY

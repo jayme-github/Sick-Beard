@@ -20,6 +20,7 @@
 
 import urllib, httplib
 import datetime
+import re
 
 import sickbeard
 
@@ -76,10 +77,28 @@ def sendNZB(nzb):
         params['mode'] = 'addfile'
         multiPartParams = {"nzbfile": (nzb.name + ".nzb", nzb.extraInfo[0])}
 
-    url = sickbeard.SAB_HOST + "api?" + urllib.urlencode(params)
 
     logger.log(u"Sending NZB to SABnzbd")
+    logger.log(u"Provider: " + nzb.provider.getID() )
+    logger.log(u"Series: " + nzb.episodes[0].show.name)
+    logger.log(u"Name: " + nzb.name)
+
+    #FIXME: Sometimes (only from nzbindex results?) we have stupid names in sab queue - postprocessing does not work then.
+    #       Should use &nzbname=NiceName here to send the "real" name to sab - loosing actual release(-group) info etc.
+    #       Guess name from nzb.name starting from nzb.episodes[0].show.name till next whitespace
+    if nzb.resultType == "nzb" and nzb.provider.getID() == 'nzbindex':
+        prettyNameRE = re.compile( '(?P<prettyName>%s.[^ ]*)' % nzb.episodes[0].show.name )
+        m = prettyNameRE.match( nzb.name )
+        if m and m.group('prettyName'):
+            prettyName = m.group('prettyName').strip()
+            if prettyName:
+                logger.log(u"Pretty name for SAB queue: " + prettyName)
+                params['nzbname'] = prettyName
+
+
+    url = sickbeard.SAB_HOST + "api?" + urllib.urlencode(params)
     logger.log(u"URL: " + url, logger.DEBUG)
+
 
     try:
         # if we have the URL to an NZB then we've built up the SAB API URL already so just call it 

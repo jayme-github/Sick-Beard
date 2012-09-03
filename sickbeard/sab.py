@@ -83,18 +83,11 @@ def sendNZB(nzb):
     logger.log(u"Series: " + nzb.episodes[0].show.name)
     logger.log(u"Name: " + nzb.name)
 
-    #FIXME: Sometimes (only from nzbindex results?) we have stupid names in sab queue - postprocessing does not work then.
-    #       Should use &nzbname=NiceName here to send the "real" name to sab - loosing actual release(-group) info etc.
-    #       Guess name from nzb.name starting from nzb.episodes[0].show.name till next whitespace
+    # Sometimes (only from nzbindex results?) we have stupid names in sab queue - postprocessing does not work then.
+    # Should use &nzbname=NiceName here to send the "real" name to sab.
     if nzb.resultType == "nzb" and nzb.provider.getID() == 'nzbindex':
-        prettyNameRE = re.compile( '(?P<prettyName>%s.[^ ]*)' % nzb.episodes[0].show.name )
-        m = prettyNameRE.match( nzb.name )
-        if m and m.group('prettyName'):
-            prettyName = m.group('prettyName').strip()
-            if prettyName:
-                logger.log(u"Pretty name for SAB queue: " + prettyName)
-                params['nzbname'] = prettyName
-
+        logger.log(u"Pretty name for SAB queue: " + nzb.name)
+        params['nzbname'] = nzb.name
 
     url = sickbeard.SAB_HOST + "api?" + urllib.urlencode(params)
     logger.log(u"URL: " + url, logger.DEBUG)

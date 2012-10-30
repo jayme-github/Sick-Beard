@@ -24,7 +24,6 @@ __all__ = ['ezrss',
            'womble',
            'newzbin',
            'nzbindex',
-           'nzbserien',
            'kere_ws',
            'btn',
            ]
@@ -111,7 +110,7 @@ def makeNewznabProvider(configString):
     return newProvider
 
 def getDefaultNewznabProviders():
-    return 'Sick Beard Index|http://momo.sickbeard.com/|0|5000|0!!!NZBs.org|http://beta.nzbs.org/||5000|0'
+    return 'Sick Beard Index|http://lolo.sickbeard.com/|0|5000|0!!!NZBs.org|http://beta.nzbs.org/||5000|0'
 
 
 def getProviderModule(name):

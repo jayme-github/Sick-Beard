@@ -41,7 +41,8 @@ class NZBIndexProvider(generic.NZBProvider):
         self.cache = NZBIndexCache(self)
 
         self.url = 'http://www.nzbindex.nl/'
-        self.searchString = ''
+        self.lastSearchStrings = []
+        self.lastSearchTime = None
 
     def isEnabled(self):
         return sickbeard.NZBINDEX
@@ -64,43 +65,60 @@ class NZBIndexProvider(generic.NZBProvider):
 
     def _get_title_and_url(self, item):
         (title, url) = super(NZBIndexProvider, self)._get_title_and_url(item)
+        newTitle = []
         logger.log( '_get_title_and_url(%s), returns (%s, %s)' %(item, title, url), logger.DEBUG)
-        logger.log( 'self.searchString=%s' %(self.searchString), logger.DEBUG)
+        logger.log( 'self.lastSearchStrings = "%s"' % self.lastSearchStrings, logger.DEBUG)
 
         # try to filter relevant parts from title
-        stitle = filter( lambda x: x.lower().startswith( self.searchString.lower().strip().split()[0] ), re.sub( '\s+', ' ', re.sub('[\[\]\(\)\<\>]+', ' ', title) ).strip().split() )
-        if len(stitle) > 1:
-            logger.log( 'more than one result for the fixed title (%s), using first.' % stitle, logger.ERROR )
-        if stitle:
-            title = stitle[0]
+        splitTitle = re.sub( '\s+|\'|"|\.par2', ' ', re.sub('[\[\]\(\)\<\>]+', ' ', title) ).strip().split()
+        # newTitle = filter( lambda x: x.lower().startswith( self.searchString.lower().strip().split()[0] ), splitTitle )
 
-        logger.log( 'fixed title: "%s"' % title, logger.DEBUG)
+        for t in splitTitle:
+            for searchString in self.lastSearchStrings:
+                if t.lower().strip().startswith( searchString.lower().strip().split()[0] ) and not t in newTitle:
+                    newTitle.append( t )
+        
+        if len(newTitle) > 1:
+            logger.log( 'more than one result for the fixed title (%s), using first.' % newTitle, logger.ERROR )
+        if newTitle:
+            newTitle = newTitle[0]
+            logger.log( 'fixed title: "%s"' % newTitle, logger.DEBUG)
+            return (newTitle, url)
+
+        # Fallback to oritinal title if we had no success
+        logger.log( 'Could not fix title...', logger.DEBUG)
         return (title, url)
+            
 
     def _doSearch(self, curString, quotes=False, show=None):
+        #term =  re.sub('[\.\-]', ' ', curString).encode('utf-8')
+        term =  curString.encode('utf-8')
 
-        term =  re.sub('[\.\-]', ' ', curString).encode('utf-8')
-        self.searchString = term
         if quotes:
             term = "\""+term+"\""
 
         # FIXME: How to get wanted quality here to improve results?
-        term += ' 720p'
+        # term += ' 720p'
 
         params = {"q": term,
-                  "max": 50,
+                  "max": 200,
                   "hidespam": 1,
+                  'complete': 1,
                   "minsize":100,
                   "nzblink":1}
 
         searchURL = "http://nzbindex.nl/rss/?" + urllib.urlencode(params)
+        logger.log(u"Search URL: " + searchURL)
 
-        logger.log(u"Search string: " + searchURL)
+        # Sleep 10sec between querys
+        if self.lastSearchTime:
+            sleepSecs = (self.lastSearchTime + 10) - time.time()
+            if sleepSecs > 0:
+                logger.log(u"Sleeping %f seconds to respect NZBIndex's rules" % sleepSecs)
+                time.sleep( sleepSecs )
 
-        logger.log(u"Sleeping 10 seconds to respect NZBIndex's rules")
-        time.sleep(10)
-        
         searchResult = self.getURL(searchURL,[("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:5.0) Gecko/20100101 Firefox/5.0"),("Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),("Accept-Language","de-de,de;q=0.8,en-us;q=0.5,en;q=0.3"),("Accept-Charset","ISO-8859-1,utf-8;q=0.7,*;q=0.7"),("Connection","keep-alive"),("Cache-Control","max-age=0")])
+        self.lastSearchTime = time.time()
 
         if not searchResult:
             return []
@@ -125,6 +143,18 @@ class NZBIndexProvider(generic.NZBProvider):
 
         return results
 
+    def findEpisode(self, episode, manualSearch=False):
+        '''
+        Cache search stings for better results from _get_title_and_url
+        '''
+        self.lastSearchStrings = self._get_episode_search_strings(episode)
+        return super(NZBIndexProvider, self).findEpisode(episode, manualSearch)
+    def findSeasonResults(self, show, season):
+        '''
+        Cache search stings for better results from _get_title_and_url
+        '''
+        self.lastSearchStrings = self._get_season_search_strings(show, season)
+        return super(NZBIndexProvider, self).findSeasonResults(show, season)
 
     def findPropers(self, date=None):
 
@@ -167,6 +197,7 @@ class NZBIndexCache(tvcache.TVCache):
                    'max': 50,
                    'sort': 'agedesc',
                    'hidespam': 1,
+                   'complete': 1,
                    'minsize':100,
                    'nzblink':1}
 
